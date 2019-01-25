@@ -1,16 +1,16 @@
 package expression;
 
-public class Multiply implements Expression {
-    private Expression left;
-    private Expression right;
+public class Multiply implements TripleExpression {
+    private TripleExpression left;
+    private TripleExpression right;
 
-    public Multiply(Expression left, Expression right) {
+    public Multiply(TripleExpression left, TripleExpression right) {
         this.left = left;
         this.right = right;
     }
 
     @Override
-    public int evaluate(int x) {
-        return left.evaluate(x) * right.evaluate(x);
+    public int evaluate(int x, int y, int z) {
+        return left.evaluate(x, y, z) * right.evaluate(x, y, z);
     }
 }
