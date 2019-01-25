@@ -1,93 +1,40 @@
 package expression.parser;
 
 import expression.*;
+import expression.BinaryOperation.*;
+import expression.UnaryOperation.Count;
+import expression.UnaryOperation.Not;
 
 public class ExpressionParser implements Parser {
-    private String expression;
-
-    private enum Token {ADD, SUB, MUL, DIV, VAR, CONST, OPEN_BRACKET, CLOSE_BRACKET, UNARY_PLUS, UNARY_MINUS, END}
-
-    private Token currentToken;
-    private String varName;
-    private int index;
-    private int value;
-
-    private void skipWhitespace() {
-        while (index < expression.length() && Character.isWhitespace(expression.charAt(index))) {
-            index++;
-        }
-    }
+    private Tokenizer tokenizer;
+    private Tokenizer.Token currentToken;
 
     private void nextToken() {
-        skipWhitespace();
-
-        if (index >= expression.length()) {
-            currentToken = Token.END;
-            return;
-        }
-
-        char ch = expression.charAt(index);
-        switch (ch) {
-            case '+':
-                if (currentToken == Token.VAR || currentToken == Token.CONST || currentToken == Token.CLOSE_BRACKET) {
-                    currentToken = Token.ADD;
-                } else {
-                    currentToken = Token.UNARY_PLUS;
-                }
-                break;
-            case '-':
-                if (currentToken == Token.VAR || currentToken == Token.CONST || currentToken == Token.CLOSE_BRACKET) {
-                    currentToken = Token.SUB;
-                } else {
-                    currentToken = Token.UNARY_MINUS;
-                }
-                break;
-            case '*':
-                currentToken = Token.MUL;
-                break;
-            case '/':
-                currentToken = Token.DIV;
-                break;
-            case '(':
-                currentToken = Token.OPEN_BRACKET;
-                break;
-            case ')':
-                currentToken = Token.CLOSE_BRACKET;
-                break;
-            default:
-                if (Character.isDigit(ch)) {
-                    int start = index;
-                    while (index + 1 < expression.length() && Character.isDigit(expression.charAt(index + 1))) {
-                        index++;
-                    }
-
-                    value = Integer.parseInt(expression.substring(start, index + 1));
-                    currentToken = Token.CONST;
-                } else if (Character.isLetter(ch)) {
-                    varName = Character.toString(ch);
-                    currentToken = Token.VAR;
-                }
-        }
-        index++;
+        currentToken = tokenizer.nextToken();
     }
 
-//    TODO doesnt work with INT_MIN
     private TripleExpression parseUnary() {
         nextToken();
 
         TripleExpression result;
         switch (currentToken) {
             case CONST:
-                result = new Const(value);
+                result = new Const(tokenizer.getValue());
                 nextToken();
                 break;
             case VAR:
-                result = new Variable(varName);
+                result = new Variable(tokenizer.getVarName());
                 nextToken();
                 break;
             case OPEN_BRACKET:
-                result = parseAddSubtract();
+                result = parseOr();
                 nextToken();
+                break;
+            case NOT:
+                result = new Not(parseUnary());
+                break;
+            case COUNT:
+                result = new Count(parseUnary());
                 break;
             case UNARY_PLUS:
                 result = parseUnary();
@@ -103,7 +50,7 @@ public class ExpressionParser implements Parser {
         return result;
     }
 
-//    TODO (expr)(expr) - is valid?
+    //    TODO (expr)(expr) - is valid?
     private TripleExpression parseDivideMultiply() {
         TripleExpression result = parseUnary();
         while (true) {
@@ -136,10 +83,33 @@ public class ExpressionParser implements Parser {
         }
     }
 
+    private TripleExpression parseAnd() {
+        TripleExpression result = parseAddSubtract();
+        while (currentToken == Tokenizer.Token.AND) {
+            result = new And(result, parseAddSubtract());
+        }
+        return result;
+    }
+
+    private TripleExpression parseXor() {
+        TripleExpression result = parseAnd();
+        while (currentToken == Tokenizer.Token.XOR) {
+            result = new Xor(result, parseAnd());
+        }
+        return result;
+    }
+
+    private TripleExpression parseOr() {
+        TripleExpression result = parseXor();
+        while (currentToken == Tokenizer.Token.OR) {
+            result = new Or(result, parseXor());
+        }
+        return result;
+    }
+
     @Override
     public TripleExpression parse(String expression) {
-        this.expression = expression;
-        index = 0;
-        return parseAddSubtract();
+        tokenizer = new Tokenizer(expression);
+        return parseOr();
     }
 }
