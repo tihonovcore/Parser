@@ -1,14 +1,14 @@
 package expression;
 
 public class Const implements TripleExpression {
-    private int value;
+    private Number value;
 
-    public Const(int value) {
+    public Const(Number value) {
         this.value = value;
     }
 
     @Override
     public int evaluate(int x, int y, int z) {
-        return value;
+        return value.intValue();
     }
 }

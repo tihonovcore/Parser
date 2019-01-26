@@ -3,17 +3,38 @@ package expression.parser;
 import expression.*;
 import expression.BinaryOperation.*;
 import expression.UnaryOperation.*;
+import expression.exceptions.*;
+
+import java.util.HashSet;
+import java.util.Set;
 
 public class ExpressionParser implements Parser {
     private Tokenizer tokenizer;
     private Tokenizer.Token currentToken;
 
-    private void nextToken() {
+    private Set<Tokenizer.Token> operations = new HashSet<Tokenizer.Token>() {{
+        add(Tokenizer.Token.ADD);
+        add(Tokenizer.Token.OR);
+        add(Tokenizer.Token.XOR);
+        add(Tokenizer.Token.MUL);
+        add(Tokenizer.Token.DIV);
+        add(Tokenizer.Token.SUB);
+        add(Tokenizer.Token.AND);
+    }};
+
+    private int balance;
+
+    private void nextToken() throws ParsingException {
         currentToken = tokenizer.nextToken();
     }
 
-    private TripleExpression parseUnary() {
+    private TripleExpression parseUnary() throws ParsingException {
+        Tokenizer.Token prevToken = currentToken;
         nextToken();
+
+        if (operations.contains(prevToken) && (currentToken != Tokenizer.Token.VAR && currentToken != Tokenizer.Token.CONST && currentToken != Tokenizer.Token.OPEN_BRACKET && currentToken != Tokenizer.Token.UNARY_MINUS)) {
+            throw new MissingOperandException("");
+        }
 
         TripleExpression result;
         switch (currentToken) {
@@ -26,7 +47,11 @@ public class ExpressionParser implements Parser {
                 nextToken();
                 break;
             case OPEN_BRACKET:
+                balance++;
                 result = parseOr();
+                if (currentToken == Tokenizer.Token.CLOSE_BRACKET) {
+                    balance--;
+                }
                 nextToken();
                 break;
             case NOT:
@@ -42,15 +67,18 @@ public class ExpressionParser implements Parser {
                 result = new CheckedNegate(parseUnary());
                 break;
             default:
-//                TODO throw exception
-                result = null;
+                throw new IndefiniteToken("");
+        }
+
+        if (balance < 0) {
+            throw new MissingOpenBracketException(""); //TODO message
         }
 
         return result;
     }
 
     //    TODO (expr)(expr) - is valid?
-    private TripleExpression parseDivideMultiply() {
+    private TripleExpression parseDivideMultiply() throws ParsingException {
         TripleExpression result = parseUnary();
         while (true) {
             switch (currentToken) {
@@ -66,7 +94,7 @@ public class ExpressionParser implements Parser {
         }
     }
 
-    private TripleExpression parseAddSubtract() {
+    private TripleExpression parseAddSubtract() throws ParsingException {
         TripleExpression result = parseDivideMultiply();
         while (true) {
             switch (currentToken) {
@@ -82,7 +110,7 @@ public class ExpressionParser implements Parser {
         }
     }
 
-    private TripleExpression parseAnd() {
+    private TripleExpression parseAnd() throws ParsingException {
         TripleExpression result = parseAddSubtract();
         while (currentToken == Tokenizer.Token.AND) {
             result = new And(result, parseAddSubtract());
@@ -90,7 +118,7 @@ public class ExpressionParser implements Parser {
         return result;
     }
 
-    private TripleExpression parseXor() {
+    private TripleExpression parseXor() throws ParsingException {
         TripleExpression result = parseAnd();
         while (currentToken == Tokenizer.Token.XOR) {
             result = new Xor(result, parseAnd());
@@ -98,7 +126,7 @@ public class ExpressionParser implements Parser {
         return result;
     }
 
-    private TripleExpression parseOr() {
+    private TripleExpression parseOr() throws ParsingException {
         TripleExpression result = parseXor();
         while (currentToken == Tokenizer.Token.OR) {
             result = new Or(result, parseXor());
@@ -107,8 +135,18 @@ public class ExpressionParser implements Parser {
     }
 
     @Override
-    public TripleExpression parse(String expression) {
+    public TripleExpression parse(String expression) throws ParsingException {
+        balance = 0;
         tokenizer = new Tokenizer(expression);
-        return parseOr();
+
+        TripleExpression result = parseOr();
+
+        if (currentToken != Tokenizer.Token.END) {
+            throw new ParsingException("");
+        }
+        if (balance != 0) {
+            throw new MissingCloseBracketException("_parse");
+        }
+        return result;
     }
 }

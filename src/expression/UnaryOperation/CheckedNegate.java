@@ -13,7 +13,7 @@ public class CheckedNegate extends AbstractUnaryOperation {
     public int evaluate(int x, int y, int z) throws EvaluatingException {
         int result = expression.evaluate(x, y, z);
         if (result == Integer.MIN_VALUE) {
-            throw new OverflowException(""); //TODO add message
+            throw new OverflowException("" + result); //TODO add message
         }
         return -result;
     }

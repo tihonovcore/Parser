@@ -1,5 +1,7 @@
 package expression.parser;
 
+import expression.exceptions.ParsingException;
+
 class Tokenizer {
     private String expression;
     private Token currentToken;
@@ -8,8 +10,8 @@ class Tokenizer {
     private int value;
 
     enum Token {
-        ADD, SUB, MUL, DIV, VAR, CONST, OPEN_BRACKET, CLOSE_BRACKET, UNARY_PLUS, UNARY_MINUS, END,
-        AND, XOR, OR, COUNT, NOT
+        ADD, SUB, MUL, DIV, VAR, CONST, OPEN_BRACKET, CLOSE_BRACKET,
+        UNARY_PLUS, UNARY_MINUS, END, AND, XOR, OR, COUNT, NOT, NULL
     }
 
     Tokenizer(String expression) {
@@ -30,7 +32,7 @@ class Tokenizer {
         }
     }
 
-    Token nextToken() {
+    Token nextToken() throws ParsingException {
         skipWhitespace();
 
         if (index >= expression.length()) {
@@ -51,7 +53,24 @@ class Tokenizer {
                 if (currentToken == Token.VAR || currentToken == Token.CONST || currentToken == Token.CLOSE_BRACKET) {
                     currentToken = Token.SUB;
                 } else {
-                    currentToken = Token.UNARY_MINUS;
+                    index++;
+                    skipWhitespace();
+                    if (Character.isDigit(expression.charAt(index))) {
+                        int start = index;
+                        while (index + 1 < expression.length() && Character.isDigit(expression.charAt(index + 1))) {
+                            index++;
+                        }
+
+                        try {
+                            value = Integer.parseInt("-" + expression.substring(start, index + 1));
+                        } catch (Exception e) {
+                            throw new ParsingException("NumberFormat"); //TODO
+                        }
+                        currentToken = Token.CONST;
+                    } else {
+                        currentToken = Token.UNARY_MINUS;
+                        index--;
+                    }
                 }
                 break;
             case '*':
@@ -85,14 +104,20 @@ class Tokenizer {
                         index++;
                     }
 
-                    value = Integer.parseUnsignedInt(expression.substring(start, index + 1));
+                    try {
+                        value = Integer.parseInt(expression.substring(start, index + 1));
+                    } catch (Exception e) {
+                        throw new ParsingException("NumberFormat"); //TODO fix
+                    }
                     currentToken = Token.CONST;
                 } else if (index + 4 < expression.length() && expression.substring(index, index + 5).equals("count")) {
                     index += 4;
                     currentToken = Token.COUNT;
-                } else if (Character.isLetter(ch)) {
+                } else if (Character.isLetter(ch) && 'x' <= ch && ch <= 'z') {
                     varName = Character.toString(ch);
                     currentToken = Token.VAR;
+                } else {
+                    currentToken = Token.NULL;
                 }
         }
         index++;
