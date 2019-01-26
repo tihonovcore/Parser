@@ -2,8 +2,7 @@ package expression.parser;
 
 import expression.*;
 import expression.BinaryOperation.*;
-import expression.UnaryOperation.Count;
-import expression.UnaryOperation.Not;
+import expression.UnaryOperation.*;
 
 public class ExpressionParser implements Parser {
     private Tokenizer tokenizer;
@@ -40,7 +39,7 @@ public class ExpressionParser implements Parser {
                 result = parseUnary();
                 break;
             case UNARY_MINUS:
-                result = new Multiply(new Const(-1), parseUnary());
+                result = new CheckedNegate(parseUnary());
                 break;
             default:
 //                TODO throw exception
@@ -56,10 +55,10 @@ public class ExpressionParser implements Parser {
         while (true) {
             switch (currentToken) {
                 case MUL:
-                    result = new Multiply(result, parseUnary());
+                    result = new CheckedMultiply(result, parseUnary());
                     break;
                 case DIV:
-                    result = new Divide(result, parseUnary());
+                    result = new CheckedDivide(result, parseUnary());
                     break;
                 default:
                     return result;
@@ -72,10 +71,10 @@ public class ExpressionParser implements Parser {
         while (true) {
             switch (currentToken) {
                 case ADD:
-                    result = new Add(result, parseDivideMultiply());
+                    result = new CheckedAdd(result, parseDivideMultiply());
                     break;
                 case SUB:
-                    result = new Subtract(result, parseDivideMultiply());
+                    result = new CheckedSubtract(result, parseDivideMultiply());
                     break;
                 default:
                     return result;

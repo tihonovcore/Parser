@@ -1,6 +1,7 @@
 package expression.UnaryOperation;
 
 import expression.TripleExpression;
+import expression.exceptions.EvaluatingException;
 
 public class Not extends AbstractUnaryOperation {
     public Not(TripleExpression expression) {
@@ -8,7 +9,7 @@ public class Not extends AbstractUnaryOperation {
     }
 
     @Override
-    public int evaluate(int x, int y, int z) {
+    public int evaluate(int x, int y, int z) throws EvaluatingException {
         return ~expression.evaluate(x, y, z);
     }
 }
