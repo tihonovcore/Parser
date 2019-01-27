@@ -1,4 +1,4 @@
-package expression.BinaryOperation;
+package expression.binaryOperation;
 
 import expression.TripleExpression;
 

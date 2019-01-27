@@ -1,4 +1,4 @@
-package expression.UnaryOperation;
+package expression.unaryOperation;
 
 import expression.TripleExpression;
 import expression.exceptions.EvaluatingException;
@@ -13,7 +13,7 @@ public class CheckedNegate extends AbstractUnaryOperation {
     public int evaluate(int x, int y, int z) throws EvaluatingException {
         int result = expression.evaluate(x, y, z);
         if (result == Integer.MIN_VALUE) {
-            throw new OverflowException("" + result); //TODO add message
+            throw new OverflowException("-" + result + " isn't int-value");
         }
         return -result;
     }

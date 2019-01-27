@@ -1,4 +1,4 @@
-package expression.BinaryOperation;
+package expression.binaryOperation;
 
 import expression.TripleExpression;
 import expression.exceptions.DivisionByZeroException;
@@ -18,10 +18,10 @@ public class CheckedDivide extends AbstractBinaryOperation {
 
     private void check(int left, int right) throws EvaluatingException {
         if (right == 0) {
-            throw new DivisionByZeroException(""); //TODO add message
+            throw new DivisionByZeroException("Division by zero: " + left + " / " + right);
         }
         if (left == Integer.MIN_VALUE && right == -1) {
-            throw new OverflowException("");
+            throw new OverflowException(left +  " / " + right + " isn't int-value");
         }
     }
 }

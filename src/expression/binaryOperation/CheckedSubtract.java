@@ -1,4 +1,4 @@
-package expression.BinaryOperation;
+package expression.binaryOperation;
 
 import expression.TripleExpression;
 import expression.exceptions.OverflowException;
@@ -16,9 +16,9 @@ public class CheckedSubtract extends AbstractBinaryOperation {
 
     private void check(int left, int right) throws OverflowException {
         if (left >= 0 && right < 0 && Integer.MAX_VALUE + right < left) {
-            throw new OverflowException(""); //TODO add message
+            throw new OverflowException(left +  " - " + right + " isn't int-value");
         } else if (left <= 0 && right > 0 &&  Integer.MIN_VALUE + right > left) {
-            throw new OverflowException(""); //TODO add message
+            throw new OverflowException(left +  " - " + right + " isn't int-value");
         }
     }
 }

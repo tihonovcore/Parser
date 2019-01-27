@@ -1,25 +1,52 @@
 package expression.parser;
 
 import expression.*;
-import expression.BinaryOperation.*;
-import expression.UnaryOperation.*;
+import expression.binaryOperation.*;
+import expression.unaryOperation.*;
 import expression.exceptions.*;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 public class ExpressionParser implements Parser {
     private Tokenizer tokenizer;
-    private Tokenizer.Token currentToken;
+    private Token currentToken;
 
-    private Set<Tokenizer.Token> operations = new HashSet<Tokenizer.Token>() {{
-        add(Tokenizer.Token.ADD);
-        add(Tokenizer.Token.OR);
-        add(Tokenizer.Token.XOR);
-        add(Tokenizer.Token.MUL);
-        add(Tokenizer.Token.DIV);
-        add(Tokenizer.Token.SUB);
-        add(Tokenizer.Token.AND);
+    private Map<Token, String> map = new HashMap<Token, String>() {{
+        put(Token.ADD, "add");
+        put(Token.SUB, "subtract");
+        put(Token.MUL, "multiply");
+        put(Token.DIV, "divide");
+        put(Token.VAR, "variable");
+        put(Token.CONST, "const");
+        put(Token.OPEN_BRACKET, "open bracket");
+        put(Token.CLOSE_BRACKET, "close bracket");
+        put(Token.UNARY_MINUS, "unary minus");
+        put(Token.UNARY_PLUS, "unary plus");
+        put(Token.END, "end of expression");
+        put(Token.AND, "and");
+        put(Token.XOR, "xor");
+        put(Token.OR, "or");
+        put(Token.NEGATE, "negate");
+    }};
+
+    private Set<Token> operations = new HashSet<Token>() {{
+        add(Token.MUL);
+        add(Token.DIV);
+        add(Token.ADD);
+        add(Token.SUB);
+        add(Token.AND);
+        add(Token.XOR);
+        add(Token.OR);
+    }};
+
+    private Set<Token> unary = new HashSet<Token>() {{
+        add(Token.VAR);
+        add(Token.CONST);
+        add(Token.OPEN_BRACKET);
+        add(Token.UNARY_MINUS);
     }};
 
     private int balance;
@@ -29,11 +56,11 @@ public class ExpressionParser implements Parser {
     }
 
     private TripleExpression parseUnary() throws ParsingException {
-        Tokenizer.Token prevToken = currentToken;
+        Token prevToken = currentToken;
         nextToken();
 
-        if (operations.contains(prevToken) && (currentToken != Tokenizer.Token.VAR && currentToken != Tokenizer.Token.CONST && currentToken != Tokenizer.Token.OPEN_BRACKET && currentToken != Tokenizer.Token.UNARY_MINUS)) {
-            throw new MissingOperandException("");
+        if (operations.contains(prevToken) && !unary.contains(currentToken)) {
+            throw new MissingOperandException("Expected operand. Find " + map.get(currentToken));
         }
 
         TripleExpression result;
@@ -49,12 +76,12 @@ public class ExpressionParser implements Parser {
             case OPEN_BRACKET:
                 balance++;
                 result = parseOr();
-                if (currentToken == Tokenizer.Token.CLOSE_BRACKET) {
+                if (currentToken == Token.CLOSE_BRACKET) {
                     balance--;
                 }
                 nextToken();
                 break;
-            case NOT:
+            case NEGATE:
                 result = new Not(parseUnary());
                 break;
             case COUNT:
@@ -67,17 +94,15 @@ public class ExpressionParser implements Parser {
                 result = new CheckedNegate(parseUnary());
                 break;
             default:
-                throw new IndefiniteToken("");
+                if (currentToken == Token.NULL) {
+                    throw new IndefiniteToken("Unknown token");
+                } else {
+                    throw new IndefiniteToken("Expected another token. Find " + map.get(currentToken));
+                }
         }
-
-        if (balance < 0) {
-            throw new MissingOpenBracketException(""); //TODO message
-        }
-
         return result;
     }
 
-    //    TODO (expr)(expr) - is valid?
     private TripleExpression parseDivideMultiply() throws ParsingException {
         TripleExpression result = parseUnary();
         while (true) {
@@ -112,7 +137,7 @@ public class ExpressionParser implements Parser {
 
     private TripleExpression parseAnd() throws ParsingException {
         TripleExpression result = parseAddSubtract();
-        while (currentToken == Tokenizer.Token.AND) {
+        while (currentToken == Token.AND) {
             result = new And(result, parseAddSubtract());
         }
         return result;
@@ -120,7 +145,7 @@ public class ExpressionParser implements Parser {
 
     private TripleExpression parseXor() throws ParsingException {
         TripleExpression result = parseAnd();
-        while (currentToken == Tokenizer.Token.XOR) {
+        while (currentToken == Token.XOR) {
             result = new Xor(result, parseAnd());
         }
         return result;
@@ -128,7 +153,7 @@ public class ExpressionParser implements Parser {
 
     private TripleExpression parseOr() throws ParsingException {
         TripleExpression result = parseXor();
-        while (currentToken == Tokenizer.Token.OR) {
+        while (currentToken == Token.OR) {
             result = new Or(result, parseXor());
         }
         return result;
@@ -141,11 +166,18 @@ public class ExpressionParser implements Parser {
 
         TripleExpression result = parseOr();
 
-        if (currentToken != Tokenizer.Token.END) {
-            throw new ParsingException("");
+        if (currentToken == Token.NULL) {
+            throw new IndefiniteToken("Unknown token");
         }
-        if (balance != 0) {
-            throw new MissingCloseBracketException("_parse");
+
+        if (currentToken != Token.END) {
+            throw new MissingOperatorException("Expected operator. Find " + map.get(currentToken));
+        }
+
+        if (balance > 0) {
+            throw new MissingCloseBracketException("Missed " + balance + " close bracket");
+        } else if (balance < 0) {
+            throw new MissingOpenBracketException("Missed " + -balance + " open bracket");
         }
         return result;
     }

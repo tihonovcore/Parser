@@ -1,15 +1,15 @@
-package expression.UnaryOperation;
+package expression.unaryOperation;
 
 import expression.TripleExpression;
 import expression.exceptions.EvaluatingException;
 
-public class Count extends AbstractUnaryOperation {
-    public Count(TripleExpression expression) {
+public class Not extends AbstractUnaryOperation {
+    public Not(TripleExpression expression) {
         super(expression);
     }
 
     @Override
     public int evaluate(int x, int y, int z) throws EvaluatingException {
-        return Integer.bitCount(super.expression.evaluate(x, y, z));
+        return ~expression.evaluate(x, y, z);
     }
 }

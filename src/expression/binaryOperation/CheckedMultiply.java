@@ -1,4 +1,4 @@
-package expression.BinaryOperation;
+package expression.binaryOperation;
 
 import expression.TripleExpression;
 import expression.exceptions.OverflowException;
@@ -20,13 +20,13 @@ public class CheckedMultiply extends AbstractBinaryOperation {
         }
 
         if (left > 0 && right > 0 && Integer.MAX_VALUE / left < right) {
-            throw new OverflowException(""); //TODO add message
+            throw new OverflowException(left +  " * " + right + " isn't int-value");
         } else if (left > 0 && right < 0 && Integer.MIN_VALUE / left > right) {
-            throw new OverflowException(""); //TODO add message
+            throw new OverflowException(left +  " * " + right + " isn't int-value");
         } else if (left != -1 && left < 0 && right > 0 && Integer.MIN_VALUE / left < right) {
-            throw new OverflowException(""); //TODO add message
+            throw new OverflowException(left +  " * " + right + " isn't int-value");
         } else if (left < 0 && right < 0 && Integer.MAX_VALUE / left > right) {
-            throw new OverflowException(""); //TODO add message
+            throw new OverflowException(left +  " * " + right + " isn't int-value");
         }
     }
 }

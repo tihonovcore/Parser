@@ -13,7 +13,7 @@ public class Variable implements TripleExpression {
             case "x": return x;
             case "y": return y;
             case "z": return z;
-            default: return 0; //TODO throw exception
+            default: return 0;
         }
     }
 }

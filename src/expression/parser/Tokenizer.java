@@ -1,6 +1,15 @@
 package expression.parser;
 
+import expression.exceptions.InvalidConstantException;
 import expression.exceptions.ParsingException;
+
+import java.util.HashSet;
+import java.util.Set;
+
+enum Token {
+    ADD, SUB, MUL, DIV, VAR, CONST, OPEN_BRACKET, CLOSE_BRACKET,
+    UNARY_PLUS, UNARY_MINUS, END, AND, XOR, OR, COUNT, NEGATE, NULL
+}
 
 class Tokenizer {
     private String expression;
@@ -9,10 +18,11 @@ class Tokenizer {
     private int index;
     private int value;
 
-    enum Token {
-        ADD, SUB, MUL, DIV, VAR, CONST, OPEN_BRACKET, CLOSE_BRACKET,
-        UNARY_PLUS, UNARY_MINUS, END, AND, XOR, OR, COUNT, NOT, NULL
-    }
+    private Set<Token> leftArgument = new HashSet<Token>(){{
+        add(Token.VAR);
+        add(Token.CONST);
+        add(Token.CLOSE_BRACKET);
+    }};
 
     Tokenizer(String expression) {
         this.expression = expression;
@@ -43,29 +53,20 @@ class Tokenizer {
         char ch = expression.charAt(index);
         switch (ch) {
             case '+':
-                if (currentToken == Token.VAR || currentToken == Token.CONST || currentToken == Token.CLOSE_BRACKET) {
+                if (leftArgument.contains(currentToken)) {
                     currentToken = Token.ADD;
                 } else {
                     currentToken = Token.UNARY_PLUS;
                 }
                 break;
             case '-':
-                if (currentToken == Token.VAR || currentToken == Token.CONST || currentToken == Token.CLOSE_BRACKET) {
+                if (leftArgument.contains(currentToken)) {
                     currentToken = Token.SUB;
                 } else {
                     index++;
                     skipWhitespace();
                     if (Character.isDigit(expression.charAt(index))) {
-                        int start = index;
-                        while (index + 1 < expression.length() && Character.isDigit(expression.charAt(index + 1))) {
-                            index++;
-                        }
-
-                        try {
-                            value = Integer.parseInt("-" + expression.substring(start, index + 1));
-                        } catch (Exception e) {
-                            throw new ParsingException("NumberFormat"); //TODO
-                        }
+                        getIntValue(true);
                         currentToken = Token.CONST;
                     } else {
                         currentToken = Token.UNARY_MINUS;
@@ -95,20 +96,11 @@ class Tokenizer {
                 currentToken = Token.OR;
                 break;
             case '~':
-                currentToken = Token.NOT;
+                currentToken = Token.NEGATE;
                 break;
             default:
                 if (Character.isDigit(ch)) {
-                    int start = index;
-                    while (index + 1 < expression.length() && Character.isDigit(expression.charAt(index + 1))) {
-                        index++;
-                    }
-
-                    try {
-                        value = Integer.parseInt(expression.substring(start, index + 1));
-                    } catch (Exception e) {
-                        throw new ParsingException("NumberFormat"); //TODO fix
-                    }
+                    getIntValue(false);
                     currentToken = Token.CONST;
                 } else if (index + 4 < expression.length() && expression.substring(index, index + 5).equals("count")) {
                     index += 4;
@@ -122,5 +114,18 @@ class Tokenizer {
         }
         index++;
         return currentToken;
+    }
+
+    private void getIntValue(boolean negative) throws ParsingException {
+        int start = index;
+        while (index + 1 < expression.length() && Character.isDigit(expression.charAt(index + 1))) {
+            index++;
+        }
+
+        try {
+            value = Integer.parseInt((negative ? "-" : "") + expression.substring(start, index + 1));
+        } catch (Exception e) {
+            throw new InvalidConstantException((negative ? "-" : "") + expression.substring(start, index + 1) + " isn't int-value");
+        }
     }
 }
